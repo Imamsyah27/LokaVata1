@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar Navigasi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background: #2c3e50;
+            color: white;
+            position: fixed;
+            left: -250px;
+            transition: left 0.3s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 15px;
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            background: #34495e;
+        }
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: #2c3e50;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        .sidebar.active {
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+    
+    <nav class="sidebar" id="sidebar">
+        <a href="#"><i class="fas fa-home"></i> Beranda</a>
+        <a href="#"><i class="fas fa-info-circle"></i> Tentang</a>
+        <a href="#"><i class="fas fa-cogs"></i> Layanan</a>
+        <a href="#"><i class="fas fa-envelope"></i> Kontak</a>
+    </nav>
+
+    <script>
+        function toggleSidebar() {
+            var sidebar = document.getElementById("sidebar");
+            var menuBtn = document.querySelector(".menu-btn i");
+            sidebar.classList.toggle("active");
+            
+            if (sidebar.classList.contains("active")) {
+                menuBtn.classList.remove("fa-bars");
+                menuBtn.classList.add("fa-times");
+            } else {
+                menuBtn.classList.remove("fa-times");
+                menuBtn.classList.add("fa-bars");
+            }
+        }
+    </script>
+</body>
+</html>

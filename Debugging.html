@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoJSON Intersect with Geoman</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geoman-free/dist/leaflet-geoman.css" />
+    <style>
+        #map {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="geojsonInput" accept=".geojson" />
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf"></script>
+    <script src="https://unpkg.com/leaflet-geoman-free"></script>
+
+    <script>
+        // Inisialisasi peta
+        const map = L.map('map').setView([-8.5, 115.2], 8); // Koordinat Bali
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        let loadedGeoJsonLayer = null;
+
+        // Tombol upload GeoJSON
+        document.getElementById('geojsonInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const geojsonData = JSON.parse(e.target.result);
+
+                    // Hapus layer sebelumnya jika ada
+                    if (loadedGeoJsonLayer) {
+                        map.removeLayer(loadedGeoJsonLayer);
+                    }
+
+                    // Tambahkan GeoJSON ke peta
+                    loadedGeoJsonLayer = L.geoJSON(geojsonData, {
+                        style: { color: 'blue', weight: 1 },
+                        onEachFeature: function (feature, layer) {
+                            if (feature.properties && feature.properties.karbon) {
+                                layer.bindPopup(`Nilai Karbon: ${feature.properties.karbon}`);
+                            }
+                        }
+                    }).addTo(map);
+
+                    map.fitBounds(loadedGeoJsonLayer.getBounds());
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Aktifkan Leaflet-Geoman
+        map.pm.addControls({
+            position: 'bottomright',
+            drawPolygon: true,
+            editMode: true,
+            removalMode: true
+        });
+
+        // Event setelah menggambar poligon
+        map.on('pm:create', function (event) {
+            const drawnLayer = event.layer;
+            const drawnGeoJSON = drawnLayer.toGeoJSON();
+
+            if (!loadedGeoJsonLayer) {
+                alert('Harap unggah file GeoJSON terlebih dahulu!');
+                return;
+            }
+
+            // Intersect GeoJSON dengan polygon yang digambar
+            const intersectedFeatures = [];
+            loadedGeoJsonLayer.eachLayer(function (layer) {
+                const feature = layer.toGeoJSON();
+                const intersection = turf.intersect(feature, drawnGeoJSON);
+
+                if (intersection) {
+                    intersection.properties = feature.properties; // Salin nilai karbon
+                    intersectedFeatures.push(intersection);
+                }
+            });
+
+            if (intersectedFeatures.length > 0) {
+                intersectedFeatures.forEach((feature, index) => {
+                    const karbonValue = feature.properties ? feature.properties.karbon : "Tidak ada nilai karbon";
+                    alert(`Fitur ${index + 1}: Nilai Karbon = ${karbonValue}`);
+                });
+
+                L.geoJSON(intersectedFeatures, { style: { color: 'purple' } }).addTo(map);
+            } else {
+                alert('Tidak ada fitur yang ter-intersect.');
+            }
+        });
+    </script>
+</body>
+</html>

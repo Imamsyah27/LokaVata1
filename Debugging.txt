@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map with Draw and GeoJSON Intersection</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.draw/dist/leaflet.draw.css" />
+    <style>
+        #map { height: 500px; width: 100%; }
+        .result { margin-top: 10px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="result" id="intersectionResult"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.draw/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/turf/turf.min.js"></script>
+<script>
+    var map = L.map('map').setView([5.58914, 95.31991], 6); // Koordinat Indonesia
+    var drawnItems = new L.FeatureGroup().addTo(map);
+
+    // TileLayer dari OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // GeoJSON data (misalnya data mangrove)
+    var geojsonData = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [95.31991, 5.58914],
+                            [95.32091, 5.58914],
+                            [95.32091, 5.59014],
+                            [95.31991, 5.59014],
+                            [95.31991, 5.58914]
+                        ]
+                    ]
+                },
+                "properties": {
+                    "name": "Mangrove Area 1"
+                }
+            }
+        ]
+    };
+
+    // Tambahkan layer GeoJSON ke peta
+    L.geoJSON(geojsonData).addTo(map);
+
+    // Setup drawing tools
+    var drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: drawnItems
+        },
+        draw: {
+            polyline: false,
+            polygon: true,
+            rectangle: true,
+            circle: false,
+            marker: false
+        }
+    });
+    map.addControl(drawControl);
+
+    // Fungsi untuk memeriksa apakah geometry yang digambar terpotong oleh GeoJSON
+    function checkIntersection(geometry) {
+        var intersected = false;
+
+        // Iterasi melalui fitur GeoJSON dan cek apakah ada intersection
+        geojsonData.features.forEach(function(feature) {
+            var geojsonPolygon = feature.geometry;
+            var drawnPolygon = geometry;
+
+            // Gunakan Turf.js untuk memeriksa intersection
+            if (turf.intersect(turf.polygon(geojsonPolygon.coordinates), turf.polygon(drawnPolygon.coordinates))) {
+                intersected = true;
+            }
+        });
+
+        // Update hasil
+        document.getElementById('intersectionResult').textContent = intersected ? "Terpotong oleh area GeoJSON" : "Tidak terpotong oleh area GeoJSON";
+    }
+
+    // Event listener untuk menangani drawing selesai
+    map.on('draw:created', function(event) {
+        var layer = event.layer;
+        drawnItems.addLayer(layer);
+
+        // Ambil koordinat dari shape yang digambar
+        var drawnGeometry = layer.toGeoJSON().geometry;
+
+        // Cek intersection
+        checkIntersection(drawnGeometry);
+    });
+</script>
+
+</body>
+</html>
